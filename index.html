@@ -35,7 +35,18 @@
     let loaded = false;
 
     frame.addEventListener('load', () => { loaded = true; loader.classList.add('hide'); });
-    frame.src = APP_URL;
+
+    // Setelah login Google, ePRESENSI membalikkan browser ke halaman ini
+    // membawa token sesi di hash URL (#epresensi_token=...) — bukan token
+    // baru, tinggal dimasukkan lagi ke iframe supaya langsung masuk tanpa
+    // nyangkut di tampilan/URL bawaan script.google.com.
+    let src = APP_URL;
+    const m = location.hash.match(/epresensi_token=([^&]+)/);
+    if (m) {
+      src += (APP_URL.indexOf('?') > -1 ? '&' : '?') + 'token=' + m[1];
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    frame.src = src;
 
     // Jaga-jaga: iframe Apps Script kadang lambat/gagal termuat di sebagian
     // browser. Kalau setelah 8 detik belum termuat, tampilkan tombol buka langsung.
