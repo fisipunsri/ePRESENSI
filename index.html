@@ -8,50 +8,102 @@
 <style>
   :root{ color-scheme: dark; }
   *{box-sizing:border-box;}
-  html,body{margin:0;height:100%;background:#060B16;overflow:hidden;}
-  #loader{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#060B16;color:#93A1C2;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;text-align:center;padding:24px;transition:opacity .3s;}
-  #loader .spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(224,177,92,.25);border-top-color:#E0B15C;animation:spin .8s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  #loader.hide{opacity:0;pointer-events:none;}
-  #fallbackBtn{display:none;margin-top:4px;background:#1B2A4D;border:1px solid rgba(255,255,255,.08);color:#EEF2FA;padding:10px 16px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;}
+  html,body{margin:0;height:100%;background:#060B16;overflow:hidden;font-family:-apple-system,Segoe UI,Roboto,sans-serif;}
   iframe{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#060B16;}
+  #loginScreen, #loader{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#060B16;color:#93A1C2;text-align:center;padding:24px;}
+  .mark{width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,#E0B15C,#8a6a2f);display:flex;align-items:center;justify-content:center;font-size:28px;}
+  h1{color:#E0B15C;font-size:20px;margin:14px 0 2px;}
+  .btn-google{background:linear-gradient(135deg,#E0B15C,#c1943f);color:#221604;border:0;border-radius:14px;padding:14px 22px;font-weight:700;font-size:14.5px;display:inline-flex;align-items:center;gap:10px;text-decoration:none;cursor:pointer;}
+  .err{color:#F26E77;font-size:13px;max-width:420px;}
+  .spin{width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:#E0B15C;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .hide{display:none !important;}
+  #fallbackBtn{margin-top:6px;display:none;background:#1B2A4D;border:1px solid rgba(255,255,255,.08);color:#EEF2FA;padding:10px 16px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;}
 </style>
 </head>
 <body>
-  <div id="loader">
-    <div class="spin"></div>
-    <div>Memuat ePRESENSI…</div>
-    <button id="fallbackBtn" onclick="window.location.href=APP_URL">Buka Langsung di Tab Ini</button>
-  </div>
-  <iframe id="appFrame" title="ePRESENSI FISIP UNSRI"
-    allow="camera; geolocation" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 
-  <script>
-    // Ganti dengan URL deployment Web App Apps Script Anda (Deploy → Manage deployments → Web app URL).
-    const APP_URL = 'https://script.google.com/macros/s/AKfycbxKeCrDkzn958wxDH9CsIpijhFZ6KJJZZnoqsYgxhXDXuwvCg9ODsZIB5_5hbmSK3Oe-Q/exec';
+<div id="loginScreen">
+  <div class="mark">🕒</div>
+  <h1>ePRESENSI FISIP UNSRI</h1>
+  <p style="margin:0 0 8px;">Presensi digital FISIP Universitas Sriwijaya</p>
+  <div id="errBox" class="err hide"></div>
+  <a id="btnLogin" class="btn-google" href="#">
+    <svg width="18" height="18" viewBox="0 0 48 48">
+      <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.9 2.4 30.4 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13 17.7 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.5 3-2.2 5.5-4.7 7.2l7.3 5.7c4.3-4 6.8-9.9 6.8-17.4z"/>
+      <path fill="#FBBC05" d="M10.5 19.3c-.5 1.5-.8 3.1-.8 4.7s.3 3.2.8 4.7l-7.9 6.1C1 31.4 0 27.8 0 24s1-7.4 2.6-10.8l7.9 6.1z"/>
+      <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.9l-7.3-5.7c-2.1 1.4-4.9 2.3-8.6 2.3-6.3 0-11.6-4.3-13.5-10.1l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/>
+    </svg>
+    Lanjutkan dengan Google
+  </a>
+  <p style="font-size:12px;max-width:380px;">Gmail yang belum terdaftar oleh admin tidak bisa masuk. Kunjungan berikutnya di perangkat ini langsung masuk otomatis selama sesi 12 jam masih berlaku.</p>
+</div>
 
+<div id="loader" class="hide">
+  <div class="spin"></div>
+  <div>Memuat ePRESENSI…</div>
+  <button id="fallbackBtn" onclick="window.location.href=APP_URL">Buka Langsung di Tab Ini</button>
+</div>
+
+<iframe id="appFrame" class="hide" title="ePRESENSI FISIP UNSRI" allow="camera; geolocation" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
+<script>
+  // Ganti 2 nilai ini:
+  const APP_URL = 'https://script.google.com/macros/s/GANTI_DENGAN_DEPLOYMENT_ID_ANDA/exec';
+  const WORKER_LOGIN_URL = 'https://GANTI-NAMA-WORKER-ANDA.workers.dev/login';
+  const SESSION_KEY = 'epresensi_session';
+  const SESSION_JAM = 12;
+
+  document.getElementById('btnLogin').href = WORKER_LOGIN_URL;
+
+  function showLogin(errMsg) {
+    document.getElementById('loginScreen').classList.remove('hide');
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('appFrame').classList.add('hide');
+    const box = document.getElementById('errBox');
+    if (errMsg) { box.textContent = errMsg; box.classList.remove('hide'); } else { box.classList.add('hide'); }
+  }
+
+  function showApp(token) {
+    document.getElementById('loginScreen').classList.add('hide');
+    document.getElementById('loader').classList.remove('hide');
     const frame = document.getElementById('appFrame');
-    const loader = document.getElementById('loader');
-    const fallbackBtn = document.getElementById('fallbackBtn');
     let loaded = false;
+    frame.addEventListener('load', () => { loaded = true; document.getElementById('loader').classList.add('hide'); frame.classList.remove('hide'); });
+    frame.src = APP_URL + (APP_URL.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
+    setTimeout(() => { if (!loaded) document.getElementById('fallbackBtn').style.display = 'inline-block'; }, 8000);
+  }
 
-    frame.addEventListener('load', () => { loaded = true; loader.classList.add('hide'); });
+  function saveSession(token) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ token: token, exp: Date.now() + SESSION_JAM * 3600 * 1000 }));
+  }
+  function loadSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!s.token || Date.now() > s.exp) { localStorage.removeItem(SESSION_KEY); return null; }
+      return s.token;
+    } catch (e) { return null; }
+  }
 
-    // Setelah login Google, ePRESENSI membalikkan browser ke halaman ini
-    // membawa token sesi di hash URL (#epresensi_token=...) — bukan token
-    // baru, tinggal dimasukkan lagi ke iframe supaya langsung masuk tanpa
-    // nyangkut di tampilan/URL bawaan script.google.com.
-    let src = APP_URL;
-    const m = location.hash.match(/epresensi_token=([^&]+)/);
-    if (m) {
-      src += (APP_URL.indexOf('?') > -1 ? '&' : '?') + 'token=' + m[1];
-      history.replaceState(null, '', location.pathname + location.search);
-    }
-    frame.src = src;
+  // 1) Baru saja dibalikkan dari Worker setelah login Google?
+  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const tokenFromHash = hashParams.get('epresensi_token');
+  const errFromHash = hashParams.get('epresensi_error');
+  if (tokenFromHash || errFromHash) history.replaceState(null, '', location.pathname + location.search);
 
-    // Jaga-jaga: iframe Apps Script kadang lambat/gagal termuat di sebagian
-    // browser. Kalau setelah 8 detik belum termuat, tampilkan tombol buka langsung.
-    setTimeout(() => { if (!loaded) fallbackBtn.style.display = 'inline-block'; }, 8000);
-  </script>
+  if (tokenFromHash) {
+    saveSession(tokenFromHash);
+    showApp(tokenFromHash);
+  } else if (errFromHash) {
+    showLogin(errFromHash);
+  } else {
+    const existing = loadSession();
+    if (existing) showApp(existing);
+    else showLogin();
+  }
+</script>
 </body>
 </html>
