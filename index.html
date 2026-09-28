@@ -185,25 +185,8 @@
   const WORKER_LOGIN_URL = 'https://epresensi-login.kepegawaiantendikfisip.workers.dev/login';
   const SESSION_KEY = 'epresensi_session';
   const SESSION_JAM = 12;
-  const READY_TIMEOUT_MS = 12000; // batas tunggu "aplikasi siap" dari Apps Script
 
-  // localStorage bisa diblokir browser; jangan sampai skrip berhenti
-  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
-  function appUrlWithToken(t) { return APP_URL + (APP_URL.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(t); }
-
-  const btnLogin = document.getElementById('btnLogin');
-  btnLogin.href = WORKER_LOGIN_URL;
-
-  // Google memblokir login dari browser dalam aplikasi (Instagram, Facebook, TikTok, dll.)
-  const IN_APP = /FBAN|FBAV|Instagram|MicroMessenger|TikTok|Line\/|; wv\)/i.test(navigator.userAgent || '');
-  btnLogin.addEventListener('click', function (e) {
-    if (IN_APP) {
-      e.preventDefault();
-      showLogin('Google memblokir login dari dalam aplikasi ini. Salin tautan, lalu buka di Chrome atau Safari.');
-    }
-  });
+  document.getElementById('btnLogin').href = WORKER_LOGIN_URL;
 
   let toastTimer;
   function menuInfo() {
@@ -218,67 +201,29 @@
     document.getElementById('loginScreen').classList.remove('hide');
     document.getElementById('loader').classList.add('hide');
     document.getElementById('appFrame').classList.add('hide');
-    const d = document.getElementById('diagBox'); if (d) d.remove();
     const box = document.getElementById('errBox');
     if (errMsg) { box.textContent = errMsg; box.classList.remove('hide'); } else { box.classList.add('hide'); }
   }
 
-  // Apps Script memberi tanda "ready" lewat postMessage setelah masuk ke aplikasi.
-  // Kalau tanda itu tidak datang, tampilkan panel penjelasan (bukan layar login yang diam-diam mengulang).
-  let appReady = false;
-  window.addEventListener('message', function (ev) {
-    if (!/^https:\/\/([a-z0-9-]+\.)*(googleusercontent|google)\.com$/i.test(ev.origin)) return;
-    if (ev.data && ev.data.epresensi === 'ready') {
-      appReady = true;
-      const d = document.getElementById('diagBox'); if (d) d.remove();
-    }
-  });
-
-  function showProblem(token) {
-    if (document.getElementById('diagBox')) return;
-    const box = document.createElement('div');
-    box.id = 'diagBox';
-    box.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));max-width:440px;margin:0 auto;z-index:90;background:#fff;color:#0E2A52;border:1px solid rgba(224,75,85,.5);border-radius:14px;padding:14px;font:13px/1.5 Inter,system-ui,sans-serif;box-shadow:0 14px 30px -16px rgba(10,70,150,.5);';
-    box.innerHTML =
-      '<b>Aplikasi belum memberi tanda siap.</b><br>' +
-      'Login Google berhasil, tetapi ePRESENSI tidak menjawab dalam ' + (READY_TIMEOUT_MS / 1000) + ' detik. ' +
-      'Kalau di belakang panel ini muncul halaman login lagi, sesi ditolak Apps Script. ' +
-      'Kalau aplikasi sudah tampil normal, berarti baris postMessage di Script.html belum dipasang.' +
-      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
-      '<button id="dgRelogin" style="flex:1;padding:9px 12px;border:0;border-radius:10px;background:#0A63CC;color:#fff;font-weight:700;cursor:pointer">Login ulang</button>' +
-      '<button id="dgDirect" style="flex:1;padding:9px 12px;border:1px solid rgba(10,91,196,.3);border-radius:10px;background:#EEF5FD;color:#0E2A52;font-weight:600;cursor:pointer">Buka langsung</button>' +
-      '<button id="dgClose" style="padding:9px 12px;border:0;background:none;color:#56708F;cursor:pointer">Tutup</button>' +
-      '</div>';
-    document.body.appendChild(box);
-    document.getElementById('dgRelogin').onclick = function () { lsDel(SESSION_KEY); window.location.replace(WORKER_LOGIN_URL); };
-    document.getElementById('dgDirect').onclick = function () { window.location.href = appUrlWithToken(token); };
-    document.getElementById('dgClose').onclick = function () { box.remove(); };
-  }
-
   function showApp(token) {
     document.getElementById('loginScreen').classList.add('hide');
-    const loader = document.getElementById('loader');
+    document.getElementById('loader').classList.remove('hide');
     const frame = document.getElementById('appFrame');
-    const fb = document.getElementById('fallbackBtn');
-    loader.classList.remove('hide');
-    // Tombol cadangan sebelumnya membuka APP_URL TANPA token, jadi mendarat di layar login. Sekarang membawa token.
-    fb.onclick = function () { window.location.href = appUrlWithToken(token); };
     let loaded = false;
-    frame.addEventListener('load', function () { loaded = true; loader.classList.add('hide'); frame.classList.remove('hide'); });
-    frame.src = appUrlWithToken(token);
-    setTimeout(function () { if (!loaded) fb.style.display = 'inline-block'; }, 8000);
-    setTimeout(function () { if (!appReady) showProblem(token); }, READY_TIMEOUT_MS);
+    frame.addEventListener('load', () => { loaded = true; document.getElementById('loader').classList.add('hide'); frame.classList.remove('hide'); });
+    frame.src = APP_URL + (APP_URL.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
+    setTimeout(() => { if (!loaded) document.getElementById('fallbackBtn').style.display = 'inline-block'; }, 8000);
   }
 
   function saveSession(token) {
-    lsSet(SESSION_KEY, JSON.stringify({ token: token, exp: Date.now() + SESSION_JAM * 3600 * 1000 }));
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ token: token, exp: Date.now() + SESSION_JAM * 3600 * 1000 }));
   }
   function loadSession() {
     try {
-      const raw = lsGet(SESSION_KEY);
+      const raw = localStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       const s = JSON.parse(raw);
-      if (!s.token || Date.now() > s.exp) { lsDel(SESSION_KEY); return null; }
+      if (!s.token || Date.now() > s.exp) { localStorage.removeItem(SESSION_KEY); return null; }
       return s.token;
     } catch (e) { return null; }
   }
@@ -288,21 +233,15 @@
   const tokenFromHash = hashParams.get('epresensi_token');
   const errFromHash = hashParams.get('epresensi_error');
   if (tokenFromHash || errFromHash) history.replaceState(null, '', location.pathname + location.search);
-  const qs = new URLSearchParams(location.search);
 
   if (tokenFromHash) {
     saveSession(tokenFromHash);
     showApp(tokenFromHash);
   } else if (errFromHash) {
     showLogin(errFromHash);
-  } else if (qs.get('logout') === '1') {
-    // Dari tombol Keluar Akun di dalam aplikasi: hapus sesi wrapper, tampilkan login
-    lsDel(SESSION_KEY);
-    history.replaceState(null, '', location.pathname);
-    showLogin();
-  } else if (qs.get('login') === '1') {
+  } else if (new URLSearchParams(location.search).get('login') === '1') {
     // Dari tombol "Masuk dengan Google" di dalam aplikasi: buang sesi lama, langsung ke Google.
-    lsDel(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
     window.location.replace(WORKER_LOGIN_URL);
   } else {
     const existing = loadSession();
