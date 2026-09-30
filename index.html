@@ -79,6 +79,14 @@
   .login-note{text-align:center;font-size:12px;color:#5F7C9F;margin-top:12px !important;}
   .err{color:#E04B55;font-size:13px;text-align:center;margin-bottom:12px;}
   .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:80;width:calc(100% - 32px);max-width:440px;background:#fff;color:#0E2A52;border:1px solid rgba(26,118,210,.3);border-radius:13px;padding:12px 14px;font-size:13px;box-shadow:0 14px 30px -16px rgba(10,70,150,.35);font-family:'Inter',system-ui,sans-serif;}
+
+  /* ---------- Layar kamera (jembatan untuk halaman Apps Script) ---------- */
+  #camOverlay{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column;}
+  #camV{flex:1;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);background:#000;}
+  #camBar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:22px 0 calc(26px + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);}
+  #camShutter{width:74px;height:74px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.55);box-shadow:0 6px 20px rgba(0,0,0,.4);padding:0;cursor:pointer;}
+  #camShutter:active{transform:scale(.92);}
+  #camClose{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:0;font-size:22px;line-height:1;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -179,6 +187,13 @@
 
 <iframe id="appFrame" class="hide" title="ePRESENSI FISIP UNSRI" allow="camera; geolocation" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 
+<!-- Layar kamera: dibuka atas permintaan halaman Apps Script (yang tidak boleh memakai getUserMedia) -->
+<div id="camOverlay" class="hide">
+  <video id="camV" autoplay playsinline muted></video>
+  <button id="camClose" type="button" aria-label="Tutup kamera">&#10005;</button>
+  <div id="camBar"><button id="camShutter" type="button" aria-label="Ambil foto"></button></div>
+</div>
+
 <script>
   // Ganti 2 nilai ini:
   const APP_URL = 'https://script.google.com/macros/s/AKfycbxKeCrDkzn958wxDH9CsIpijhFZ6KJJZZnoqsYgxhXDXuwvCg9ODsZIB5_5hbmSK3Oe-Q/exec';
@@ -248,6 +263,73 @@
     if (existing) showApp(existing);
     else showLogin();
   }
+</script>
+
+<script>
+  // ===== Jembatan kamera =====
+  // Halaman Apps Script berjalan di iframe sandbox yang memblokir getUserMedia. Karena itu kamera dibuka
+  // di halaman ini (level atas), lalu foto dikirim balik lewat postMessage. Tidak ada pilihan galeri.
+  (function () {
+    const overlay = document.getElementById('camOverlay'), vid = document.getElementById('camV');
+    let stream = null, replyTo = null, reqId = 0;
+
+    // Pastikan pengirim pesan memang iframe aplikasi (atau turunannya).
+    function fromApp(src) {
+      try {
+        const root = document.getElementById('appFrame').contentWindow;
+        for (let w = src, i = 0; w && i < 8; i++) {
+          if (w === root) return true;
+          if (w.parent === w) break;
+          w = w.parent;
+        }
+      } catch (e) {}
+      return false;
+    }
+    function send(act, extra) {
+      if (!replyTo || !reqId) return;
+      try { replyTo.postMessage(Object.assign({ epresensi: 'cam', act: act, id: reqId }, extra || {}), '*'); } catch (e) {}
+    }
+    function stopStream() {
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      vid.srcObject = null;
+      overlay.classList.add('hide');
+    }
+    async function openCam(src, id) {
+      stopStream();
+      replyTo = src; reqId = id;
+      send('ack');
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return send('error', { name: 'TidakDidukung' });
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+        if (reqId !== id) { s.getTracks().forEach(t => t.stop()); return; }
+        stream = s; vid.srcObject = s;
+        overlay.classList.remove('hide');
+        try { await vid.play(); } catch (e) {}
+      } catch (e) {
+        if (reqId === id) send('error', { name: e && e.name, message: e && e.message });
+      }
+    }
+    function snap() {
+      const w = vid.videoWidth, h = vid.videoHeight;
+      if (!w || !h) return;
+      const k = Math.min(1, 1024 / Math.max(w, h));
+      const c = document.createElement('canvas');
+      c.width = Math.round(w * k); c.height = Math.round(h * k);
+      const ctx = c.getContext('2d');
+      ctx.translate(c.width, 0); ctx.scale(-1, 1);
+      ctx.drawImage(vid, 0, 0, c.width, c.height);
+      send('photo', { dataUrl: c.toDataURL('image/jpeg', 0.85) });
+      stopStream();
+    }
+    document.getElementById('camShutter').addEventListener('click', snap);
+    document.getElementById('camClose').addEventListener('click', () => { send('cancel'); stopStream(); });
+    window.addEventListener('message', ev => {
+      const d = ev.data;
+      if (!d || d.epresensi !== 'cam' || !fromApp(ev.source)) return;
+      if (d.act === 'open') openCam(ev.source, d.id);
+      else if (d.act === 'close') { reqId = 0; stopStream(); }
+    });
+  })();
 </script>
 </body>
 </html>
