@@ -348,6 +348,25 @@
       return false;
     }
     let cache = null;
+    function ciriFisik() {
+      const p = [];
+      try {
+        const k = window.devicePixelRatio || 1;
+        p.push('layar ' + Math.round(screen.width * k) + 'x' + Math.round(screen.height * k));
+      } catch (e) {}
+      try { if (navigator.deviceMemory) p.push('RAM~' + navigator.deviceMemory + 'GB'); } catch (e) {}
+      try { if (navigator.hardwareConcurrency) p.push(navigator.hardwareConcurrency + ' core'); } catch (e) {}
+      try {
+        const gl = document.createElement('canvas').getContext('webgl');
+        const x = gl && gl.getExtension('WEBGL_debug_renderer_info');
+        if (x) {
+          const r = String(gl.getParameter(x.UNMASKED_RENDERER_WEBGL) || '').replace(/^ANGLE \(/, '').replace(/\)$/, '').split(',').slice(0, 2).join(',').trim();
+          if (r) p.push(r.slice(0, 40));
+        }
+        const l = gl && gl.getExtension('WEBGL_lose_context'); if (l) l.loseContext();
+      } catch (e) {}
+      return p.join(' | ');
+    }
     function infoPerangkat() {
       if (cache) return cache;
       const ua = navigator.userAgent || '';
@@ -356,8 +375,13 @@
       const reduksi = model === 'K';
       if (reduksi) model = '';
       const a = /Android ([\d.]+)/.exec(ua);
-      let os = (a && !reduksi) ? 'Android ' + a[1].split('.')[0] : (/iPhone|iPad/.test(ua) ? 'iOS' : '');
-      const gabung = function () { return [model, os].filter(Boolean).join(' | ').slice(0, 120); };
+      const verUa = a ? a[1].split('.')[0] : '';
+      // Chrome yang menyamarkan model membekukan versi ke 10; angka lain berarti versi asli.
+      let os = (a && !(reduksi && verUa === '10')) ? 'Android ' + verUa : (/iPhone|iPad/.test(ua) ? 'iOS' : '');
+      const gabung = function () {
+        const dasar = [model, os].filter(Boolean).join(' | ');
+        return (model ? dasar : [dasar, ciriFisik()].filter(Boolean).join(' | ')).slice(0, 160);
+      };
       const diag = function (alasan) { return ('? wrapper aktif; ' + alasan + '; ua=' + ua.slice(0, 80)).slice(0, 200); };
       const uad = navigator.userAgentData;
       if (!uad || !uad.getHighEntropyValues) { cache = Promise.resolve(gabung() || diag('userAgentData tidak ada')); return cache; }
