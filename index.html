@@ -353,21 +353,22 @@
       const ua = navigator.userAgent || '';
       const m = /Android [\d.]+; ([^;)]+)/.exec(ua);
       let model = m ? m[1].replace(/ Build\/.*$/, '').trim() : '';
-      const reduksi = model === 'K'; // userAgent Chrome yang disamarkan
+      const reduksi = model === 'K';
       if (reduksi) model = '';
       const a = /Android ([\d.]+)/.exec(ua);
       let os = (a && !reduksi) ? 'Android ' + a[1].split('.')[0] : (/iPhone|iPad/.test(ua) ? 'iOS' : '');
       const gabung = function () { return [model, os].filter(Boolean).join(' | ').slice(0, 120); };
+      const diag = function (alasan) { return ('? wrapper aktif; ' + alasan + '; ua=' + ua.slice(0, 80)).slice(0, 200); };
       const uad = navigator.userAgentData;
-      if (!uad || !uad.getHighEntropyValues) { cache = Promise.resolve(gabung()); return cache; }
-      const batas = new Promise(function (r) { setTimeout(function () { r(gabung()); }, 1500); });
+      if (!uad || !uad.getHighEntropyValues) { cache = Promise.resolve(gabung() || diag('userAgentData tidak ada')); return cache; }
+      const batas = new Promise(function (r) { setTimeout(function () { r(gabung() || diag('high-entropy lambat')); }, 1500); });
       const tanya = uad.getHighEntropyValues(['model', 'platformVersion']).then(function (v) {
         const mdl = String(v.model || '').trim();
         if (mdl) model = mdl;
         const pv = String(v.platformVersion || '').split('.')[0];
         if (pv && /android/i.test(String(v.platform || uad.platform || ''))) os = 'Android ' + pv;
-        return gabung();
-      }).catch(function () { return gabung(); });
+        return gabung() || diag('model kosong, platform=' + (v.platform || '?') + ', mobile=' + v.mobile);
+      }).catch(function (e) { return gabung() || diag('high-entropy error ' + (e && e.name)); });
       cache = Promise.race([tanya, batas]);
       return cache;
     }
