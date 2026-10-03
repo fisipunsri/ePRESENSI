@@ -331,5 +331,54 @@
     });
   })();
 </script>
+
+<script>
+  // ===== Jembatan info perangkat =====
+  // Dipanggil halaman Apps Script lewat postMessage untuk mendapat merek/model HP.
+  (function () {
+    function fromApp(src) {
+      try {
+        const root = document.getElementById('appFrame').contentWindow;
+        for (let w = src, i = 0; w && i < 8; i++) {
+          if (w === root) return true;
+          if (w.parent === w) break;
+          w = w.parent;
+        }
+      } catch (e) {}
+      return false;
+    }
+    let cache = null;
+    function infoPerangkat() {
+      if (cache) return cache;
+      const ua = navigator.userAgent || '';
+      const m = /Android [\d.]+; ([^;)]+)/.exec(ua);
+      let model = m ? m[1].replace(/ Build\/.*$/, '').trim() : '';
+      const reduksi = model === 'K'; // userAgent Chrome yang disamarkan
+      if (reduksi) model = '';
+      const a = /Android ([\d.]+)/.exec(ua);
+      let os = (a && !reduksi) ? 'Android ' + a[1].split('.')[0] : (/iPhone|iPad/.test(ua) ? 'iOS' : '');
+      const gabung = function () { return [model, os].filter(Boolean).join(' | ').slice(0, 120); };
+      const uad = navigator.userAgentData;
+      if (!uad || !uad.getHighEntropyValues) { cache = Promise.resolve(gabung()); return cache; }
+      const batas = new Promise(function (r) { setTimeout(function () { r(gabung()); }, 1500); });
+      const tanya = uad.getHighEntropyValues(['model', 'platformVersion']).then(function (v) {
+        const mdl = String(v.model || '').trim();
+        if (mdl) model = mdl;
+        const pv = String(v.platformVersion || '').split('.')[0];
+        if (pv && /android/i.test(String(v.platform || uad.platform || ''))) os = 'Android ' + pv;
+        return gabung();
+      }).catch(function () { return gabung(); });
+      cache = Promise.race([tanya, batas]);
+      return cache;
+    }
+    window.addEventListener('message', function (ev) {
+      const d = ev.data;
+      if (!d || d.epresensi !== 'info' || d.act !== 'get' || !fromApp(ev.source)) return;
+      infoPerangkat().then(function (info) {
+        try { ev.source.postMessage({ epresensi: 'info', act: 'result', id: d.id, info: info }, '*'); } catch (e) {}
+      });
+    });
+  })();
+</script>
 </body>
 </html>
