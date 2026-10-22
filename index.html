@@ -205,6 +205,20 @@
           </span>
           <span>Masuk dengan Google</span>
         </a>
+        <div id="orPass">
+          <div class="or-div"><span>atau</span></div>
+          <button type="button" class="btn-pass" onclick="showPass(true)"><svg class="ico" viewBox="0 0 24 24" style="width:18px;height:18px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Masuk dengan Password</button>
+        </div>
+        <div id="passBox" class="pass-box">
+          <div class="or-div"><span>atau</span></div>
+          <div class="pass-head"><b>Masuk dengan Password</b><span>Masukkan kata kunci pribadi Anda</span></div>
+          <div class="pass-wrap">
+            <input id="inPass" type="password" placeholder="Kata kunci" autocomplete="current-password" onkeydown="if(event.key==='Enter')doPassLogin()">
+            <button type="button" class="eye" onclick="togglePass(this)">LIHAT</button>
+          </div>
+          <button type="button" id="btnPassGo" class="btn-pass-go" onclick="doPassLogin()">Masuk</button>
+          <button type="button" class="pass-back" onclick="showPass(false)">&larr; Kembali</button>
+        </div>
         <p class="login-note">Gunakan akun Google yang terdaftar sebagai pegawai FISIP.</p>
       </div>
     </div>
