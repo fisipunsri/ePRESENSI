@@ -101,6 +101,24 @@
   #loginScreen button:focus:not(:focus-visible),#loginScreen a:focus:not(:focus-visible){outline:none;}
   .bubble{transition:transform .12s ease, box-shadow .12s ease;}
   .menu-item:active .bubble{transform:scale(.9);box-shadow:0 3px 8px -6px rgba(10,91,196,.55), inset 0 0 0 2px rgba(255,255,255,.85);}
+
+  /* ---------- Login password ---------- */
+  .or-div{display:flex;align-items:center;gap:12px;margin:14px 0;color:#7C93B2;font-size:12px;font-weight:600;}
+  .or-div::before,.or-div::after{content:'';flex:1;height:1px;background:rgba(26,118,210,.2);}
+  .btn-pass{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#0B5CB8;border:1.5px solid rgba(26,118,210,.35);border-radius:14px;padding:15px 18px;font-size:15.5px;font-weight:700;box-shadow:0 10px 20px -14px rgba(10,99,204,.5);}
+  .btn-pass:active{transform:scale(.98);}
+  .pass-box{display:none;}
+  .pass-box.show{display:block;}
+  .pass-head{text-align:center;margin-bottom:14px;}
+  .pass-head b{display:block;font-family:'Sora',sans-serif;font-size:17px;color:#0B5CB8;}
+  .pass-head span{font-size:12px;color:#5F7C9F;}
+  .pass-wrap{position:relative;margin-bottom:14px;}
+  .pass-wrap input{width:100%;background:#fff;border:1px solid rgba(26,118,210,.3);border-radius:14px;padding:15px 84px 15px 16px;font-size:15px;font-family:inherit;color:#0E2A52;outline:none;letter-spacing:.04em;}
+  .pass-wrap input:focus{border-color:#1E80E6;box-shadow:0 0 0 4px rgba(30,128,230,.14);}
+  .pass-wrap .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:0;color:#7C93B2;font-size:12px;font-weight:700;}
+  .btn-pass-go{width:100%;border:0;border-radius:14px;padding:15px 18px;font-size:16px;font-weight:700;color:#fff;background:linear-gradient(180deg,#2390EE,#0C65CC);box-shadow:0 12px 22px -10px rgba(10,99,204,.75), inset 0 -3px 0 rgba(0,0,0,.14);}
+  .btn-pass-go:disabled{opacity:.6;pointer-events:none;}
+  .pass-back{display:block;margin:14px auto 0;background:none;border:0;color:#0B5CB8;font-size:13px;font-weight:600;}
   
   /* ---------- Layar kamera (jembatan untuk halaman Apps Script) ---------- */
   #camOverlay{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column;}
