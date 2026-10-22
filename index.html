@@ -358,6 +358,41 @@
 </script>
 
 <script>
+  function showPass(show) {
+    document.getElementById('passBox').classList.toggle('show', show);
+    document.getElementById('orPass').style.display = show ? 'none' : '';
+    document.getElementById('btnLogin').style.display = show ? 'none' : '';
+    document.getElementById('errBox').classList.add('hide');
+    if (show) setTimeout(function () { var i = document.getElementById('inPass'); if (i) i.focus(); }, 120);
+  }
+  function togglePass(btn) {
+    var el = document.getElementById('inPass'), tampil = el.type === 'text';
+    el.type = tampil ? 'password' : 'text';
+    btn.textContent = tampil ? 'LIHAT' : 'SEMBUNYIKAN';
+  }
+  function doPassLogin() {
+    var pw = document.getElementById('inPass').value;
+    var box = document.getElementById('errBox');
+    if (!pw) { box.textContent = 'Kata kunci wajib diisi.'; box.classList.remove('hide'); return; }
+    var btn = document.getElementById('btnPassGo');
+    btn.disabled = true; btn.textContent = 'Memproses…'; box.classList.add('hide');
+    fetch(APP_URL + (APP_URL.indexOf('?') > -1 ? '&' : '?') + 'api=loginpass&pw=' + encodeURIComponent(pw))
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        btn.disabled = false; btn.textContent = 'Masuk';
+        if (!res || !res.success) { box.textContent = (res && res.message) || 'Login gagal.'; box.classList.remove('hide'); return; }
+        document.getElementById('inPass').value = '';
+        saveSession(res.token);
+        showApp(res.token);
+      })
+      .catch(function () {
+        btn.disabled = false; btn.textContent = 'Masuk';
+        box.textContent = 'Gagal terhubung ke server. Coba lagi.'; box.classList.remove('hide');
+      });
+  }
+</script>
+  
+<script>
   // ===== Jembatan kamera =====
   // Halaman Apps Script berjalan di iframe sandbox yang memblokir getUserMedia. Karena itu kamera dibuka
   // di halaman ini (level atas), lalu foto dikirim balik lewat postMessage. Tidak ada pilihan galeri.
