@@ -96,6 +96,24 @@
   .err{color:#E04B55;font-size:13px;text-align:center;margin-bottom:12px;}
   .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:80;width:calc(100% - 32px);max-width:440px;background:#fff;color:#0E2A52;border:1px solid rgba(26,118,210,.3);border-radius:13px;padding:12px 14px;font-size:13px;box-shadow:0 14px 30px -16px rgba(10,70,150,.35);font-family:'Inter',system-ui,sans-serif;}
 
+  /* ---------- Login password ---------- */
+  .or-div{display:flex;align-items:center;gap:12px;margin:14px 0;color:#7C93B2;font-size:12px;font-weight:600;}
+  .or-div::before,.or-div::after{content:'';flex:1;height:1px;background:rgba(26,118,210,.2);}
+  .btn-pass{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;color:#0B5CB8;border:1.5px solid rgba(26,118,210,.35);border-radius:14px;padding:15px 18px;font-size:15.5px;font-weight:700;box-shadow:0 10px 20px -14px rgba(10,99,204,.5);}
+  .btn-pass:active{transform:scale(.98);}
+  .pass-box{display:none;}
+  .pass-box.show{display:block;}
+  .pass-head{text-align:center;margin-bottom:14px;}
+  .pass-head b{display:block;font-family:'Sora',sans-serif;font-size:17px;color:#0B5CB8;}
+  .pass-head span{font-size:12px;color:#5F7C9F;}
+  .pass-wrap{position:relative;margin-bottom:14px;}
+  .pass-wrap input{width:100%;background:#fff;border:1px solid rgba(26,118,210,.3);border-radius:14px;padding:15px 84px 15px 16px;font-size:15px;font-family:inherit;color:#0E2A52;outline:none;letter-spacing:.04em;}
+  .pass-wrap input:focus{border-color:#1E80E6;box-shadow:0 0 0 4px rgba(30,128,230,.14);}
+  .pass-wrap .eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:0;color:#7C93B2;font-size:12px;font-weight:700;}
+  .btn-pass-go{width:100%;border:0;border-radius:14px;padding:15px 18px;font-size:16px;font-weight:700;color:#fff;background:linear-gradient(180deg,#2390EE,#0C65CC);box-shadow:0 12px 22px -10px rgba(10,99,204,.75), inset 0 -3px 0 rgba(0,0,0,.14);}
+  .btn-pass-go:disabled{opacity:.6;pointer-events:none;}
+  .pass-back{display:block;margin:14px auto 0;background:none;border:0;color:#0B5CB8;font-size:13px;font-weight:600;}
+  
   /* ---------- Layar kamera (jembatan untuk halaman Apps Script) ---------- */
   #camOverlay{position:fixed;inset:0;z-index:100;background:#000;display:flex;flex-direction:column;}
   #camV{flex:1;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);background:#000;}
@@ -187,6 +205,20 @@
           </span>
           <span>Masuk dengan Google</span>
         </a>
+        <div id="orPass">
+          <div class="or-div"><span>atau</span></div>
+          <button type="button" class="btn-pass" onclick="showPass(true)"><svg class="ico" viewBox="0 0 24 24" style="width:18px;height:18px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Masuk dengan Password</button>
+        </div>
+        <div id="passBox" class="pass-box">
+          <div class="or-div"><span>atau</span></div>
+          <div class="pass-head"><b>Masuk dengan Password</b><span>Masukkan kata kunci pribadi Anda</span></div>
+          <div class="pass-wrap">
+            <input id="inPass" type="password" placeholder="Kata kunci" autocomplete="current-password" onkeydown="if(event.key==='Enter')doPassLogin()">
+            <button type="button" class="eye" onclick="togglePass(this)">LIHAT</button>
+          </div>
+          <button type="button" id="btnPassGo" class="btn-pass-go" onclick="doPassLogin()">Masuk</button>
+          <button type="button" class="pass-back" onclick="showPass(false)">&larr; Kembali</button>
+        </div>
         <p class="login-note">Gunakan akun Google yang terdaftar sebagai pegawai FISIP.</p>
       </div>
     </div>
@@ -282,6 +314,41 @@
   }
 </script>
 
+<script>
+  function showPass(show) {
+    document.getElementById('passBox').classList.toggle('show', show);
+    document.getElementById('orPass').style.display = show ? 'none' : '';
+    document.getElementById('btnLogin').style.display = show ? 'none' : '';
+    document.getElementById('errBox').classList.add('hide');
+    if (show) setTimeout(function () { var i = document.getElementById('inPass'); if (i) i.focus(); }, 120);
+  }
+  function togglePass(btn) {
+    var el = document.getElementById('inPass'), tampil = el.type === 'text';
+    el.type = tampil ? 'password' : 'text';
+    btn.textContent = tampil ? 'LIHAT' : 'SEMBUNYIKAN';
+  }
+  function doPassLogin() {
+    var pw = document.getElementById('inPass').value;
+    var box = document.getElementById('errBox');
+    if (!pw) { box.textContent = 'Kata kunci wajib diisi.'; box.classList.remove('hide'); return; }
+    var btn = document.getElementById('btnPassGo');
+    btn.disabled = true; btn.textContent = 'Memproses…'; box.classList.add('hide');
+    fetch(APP_URL + (APP_URL.indexOf('?') > -1 ? '&' : '?') + 'api=loginpass&pw=' + encodeURIComponent(pw))
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        btn.disabled = false; btn.textContent = 'Masuk';
+        if (!res || !res.success) { box.textContent = (res && res.message) || 'Login gagal.'; box.classList.remove('hide'); return; }
+        document.getElementById('inPass').value = '';
+        saveSession(res.token);
+        showApp(res.token);
+      })
+      .catch(function () {
+        btn.disabled = false; btn.textContent = 'Masuk';
+        box.textContent = 'Gagal terhubung ke server. Coba lagi.'; box.classList.remove('hide');
+      });
+  }
+</script>
+  
 <script>
   // ===== Jembatan kamera =====
   // Halaman Apps Script berjalan di iframe sandbox yang memblokir getUserMedia. Karena itu kamera dibuka
