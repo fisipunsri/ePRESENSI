@@ -402,7 +402,8 @@
       if (!ok) return;
     } catch (e) { return; }
     localStorage.removeItem(SESSION_KEY);
-    showLogin(String(d.pesan || 'Sesi berakhir.'));
+    document.getElementById('appFrame').src = 'about:blank';
+    showLogin(d.pesan ? String(d.pesan) : '');
   });
 </script>
   
