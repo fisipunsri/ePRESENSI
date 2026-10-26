@@ -391,6 +391,20 @@
       });
   }
 </script>
+
+<script>
+  window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || d.epresensi !== 'logout') return;
+    try {
+      var root = document.getElementById('appFrame').contentWindow, w = ev.source, ok = false;
+      for (var i = 0; w && i < 8; i++) { if (w === root) { ok = true; break; } if (w.parent === w) break; w = w.parent; }
+      if (!ok) return;
+    } catch (e) { return; }
+    localStorage.removeItem(SESSION_KEY);
+    showLogin(String(d.pesan || 'Sesi berakhir.'));
+  });
+</script>
   
 <script>
   // ===== Jembatan kamera =====
